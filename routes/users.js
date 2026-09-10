@@ -1,5 +1,6 @@
 const express = require('express')
 const bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
 const { check, validationResult } = require('express-validator')
 const User = require('../models/User')
 
@@ -44,7 +45,31 @@ router.post('/', regCheck, async (req, res) => {
 
     await user.save()
 
-    res.send('User saved')
+    // JWT Token
+    const payload = {
+      user: {
+        id: user.id,
+      },
+    }
+
+    const secret = process.env.JWT_SECRET
+
+    if (!secret) {
+      console.error('JWT_SECRET is not set — copy .env.example to .env')
+      process.exit(1)
+    }
+
+    jwt.sign(
+      payload,
+      secret,
+      {
+        expiresIn: 3600,
+      },
+      (err, token) => {
+        if (err) throw err
+        res.json({ token })
+      },
+    )
   } catch (error) {
     console.error(error.message)
     res.status(500).send('Server error')
