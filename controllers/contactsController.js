@@ -43,7 +43,7 @@ const updateContact = async (req, res) => {
   }
 
   if (contact.user.toString() !== req.user.id) {
-    return res.status(401).json({ msg: 'Not autherized' })
+    return res.status(401).json({ msg: 'Not authorized' })
   }
 
   contact = await Contact.findByIdAndUpdate(
@@ -66,7 +66,7 @@ const deleteContact = async (req, res) => {
   }
 
   if (contact.user.toString() !== req.user.id) {
-    return res.status(401).json({ msg: 'Not autherized' })
+    return res.status(401).json({ msg: 'Not authorized' })
   }
 
   await Contact.findByIdAndDelete(req.params.id)
