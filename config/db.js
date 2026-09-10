@@ -9,8 +9,10 @@ const connectDB = () => {
   }
 
   mongoose
-    .connect(db)
-    .then(() => console.log('MongoDB connected'))
+    .connect(db, { dbName: 'dev-db' })
+    .then(conn =>
+      console.log(`MongoDB connected — db: ${conn.connection.name}`),
+    )
     .catch(error => {
       console.error(error.message)
       process.exit(1)
