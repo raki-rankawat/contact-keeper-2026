@@ -3,11 +3,13 @@ const connectDB = require('./config/db')
 require('dotenv').config()
 
 const app = express()
+const PORT = process.env.PORT || 5000
 
 // Connect Database
 connectDB()
 
-const PORT = process.env.PORT || 5000
+// Init middleware | Body parser
+app.use(express.json({ extended: false }))
 
 app.get('/', (req, res) =>
   res.json({ msg: 'Welcome to contact keepter 2026 APIs' }),
