@@ -8,14 +8,6 @@ node_modules/
 .env.*
 !.env.example
 
-# `config` package: machine-local overrides.
-# NOTE: config/default.json holds the mongoURI and jwtSecret in this stack —
-# uncomment the next line if you put real credentials there instead of in .env.
-# config/default.json
-config/local.json
-config/local-*.json
-config/*.local.json
-
 # Build output
 build/
 dist/
