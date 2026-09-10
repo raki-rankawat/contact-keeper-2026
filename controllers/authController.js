@@ -5,8 +5,10 @@ const User = require('../models/User')
 // @route    GET api/auth
 // @desc     Get logged in user
 // @access   Private
-const getLoggedInUser = (req, res) => {
-  res.send('Get logged in user')
+const getLoggedInUser = async (req, res) => {
+  const user = await User.findById(req.user.id).select('-password')
+
+  res.json(user)
 }
 
 // @route    POST api/auth
