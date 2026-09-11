@@ -47,6 +47,8 @@ cp .env.example .env
 `MONGO_URI` and `JWT_SECRET` are checked at boot by `config/env.js`. If either is missing the process prints the missing names and exits immediately rather than failing later on the first request.
 
 > **Note:** the database name is currently hardcoded as `dev-db` in `config/db.js`, which overrides the database path segment in `MONGO_URI`. Change it there if you want a different database.
+>
+> This is slated to be removed — see [Spec 04 / T4](features/04-tooling.md). Until then, a correct production `MONGO_URI` still writes to `dev-db`.
 
 ### Run
 
@@ -65,7 +67,9 @@ Register or log in to get a token, then send it on every private request in the 
 x-auth-token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-This is a custom header, **not** `Authorization: Bearer`. Tokens expire after **1 hour**.
+This is a custom header, **not** `Authorization: Bearer`. Tokens expire after **1 hour**, and there is no refresh endpoint — clients must log in again when a token expires.
+
+> **Planned change:** both of these are due to move to standards — `Authorization: Bearer` in [Spec 05 / A1](features/05-auth-features.md), and an access/refresh token split in [A2](features/05-auth-features.md). Treat the header as unstable if you are building a client now.
 
 Requests to a private route without a token get `401 { "msg": "No token, authorization denied" }`; with a bad or expired token, `401 { "msg": "Invalid token, authorization denied" }`.
 
@@ -123,11 +127,15 @@ A contact looks like:
 }
 ```
 
-`name` is the only field required on write. `type` is a free-form string that defaults to `personal`.
+`name` is the only field required on write. `type` is a free-form string that defaults to `personal` — it is **not** currently constrained to `personal` / `professional` ([Spec 03 / D4](features/03-design-and-performance.md) adds the enum).
+
+There is no single-contact read endpoint yet; fetch the list and filter client-side ([Spec 06 / F1](features/06-contacts-features.md)).
 
 #### `GET /api/contacts` — list — *private*
 
 **200** → array of the caller's contacts, newest first.
+
+Returns **every** contact the caller owns — there is no pagination, no search, and no sort option. [Spec 06 / F2–F3](features/06-contacts-features.md) add all three, which will change this response from a bare array to an object with pagination metadata.
 
 #### `POST /api/contacts` — create — *private*
 
@@ -140,6 +148,8 @@ A contact looks like:
 #### `PUT /api/contacts/:id` — update — *private*
 
 Send only the fields you want changed (`name` must still be present). Omitted fields are left untouched.
+
+> The `name` requirement on PUT is a bug, not a design choice — the route's validation chain contradicts the controller, which is written for partial updates. See [Spec 01 / C3](features/01-correctness-bugs.md).
 
 **200** → the updated contact
 **404** → `{ "msg": "No contact found" }`
@@ -159,6 +169,11 @@ Validation failures return **400** with the `express-validator` array:
 ```
 
 Unexpected server errors return **500** `{ "msg": "Internal Server Error" }` — the stack is logged server-side, never sent to the client.
+
+Two known rough edges for client authors:
+
+- A **malformed** `:id` (not a valid ObjectId) currently returns 500 rather than 400 — see [Spec 01 / C2](features/01-correctness-bugs.md).
+- The response shape is not consistent across the API: bare objects, bare arrays, `{ msg }`, and `{ errors: [...] }` are all in use, and errors carry no machine-readable code. [Spec 07 / P7](features/07-api-platform.md) unifies this, and it is a breaking change.
 
 ## Example session
 
@@ -187,6 +202,7 @@ controllers/  request handlers (business logic)
 models/       Mongoose schemas — User, Contact
 middleware/   auth (JWT), validate (express-validator), errorHandler
 utils/        token generation
+features/     specs for planned work — not code
 server.js     app bootstrap and route mounting
 ```
 
@@ -194,6 +210,31 @@ Requests flow **route → validation → auth → controller → model**. Routes
 
 ## Roadmap
 
-- [ ] React frontend in `client/` (`concurrently` is already installed to run API and client together)
-- [ ] Automated tests — there is no test suite yet
-- [ ] Refresh tokens / longer-lived sessions
+Planned work lives in [features/](features/) as written specs — problem, fix, and
+acceptance criteria per item. Nothing in them is implemented yet; the API reference above
+describes what the code actually does today.
+
+**Start with [features/00-implementation-plan.md](features/00-implementation-plan.md)** — it
+sequences all 44 items by dependency and says where to stop. The specs themselves are
+reference material, not a reading list.
+
+| Spec | Covers |
+| --- | --- |
+| [01 — Correctness bugs](features/01-correctness-bugs.md) | Broken `.env.example`, 500s on malformed ids, PUT partial updates, email casing, dead schema validation |
+| [02 — Security hardening](features/02-security-hardening.md) | Auth rate limiting, `helmet`/`cors`, login timing, middleware order |
+| [03 — Design & performance](features/03-design-and-performance.md) | Query index, ownership guard, 404 handler, `type` enum, token lifetime |
+| [04 — Tooling](features/04-tooling.md) | Test harness, unused deps, `ref` mismatch, hardcoded `dev-db`, linting |
+| [05 — Auth features](features/05-auth-features.md) | Bearer tokens, refresh tokens, logout, password reset, email verification |
+| [06 — Contacts features](features/06-contacts-features.md) | Read-one, search, pagination, CSV import/export, favourites, soft delete |
+| [07 — API platform](features/07-api-platform.md) | Graceful shutdown, health check, logging, OpenAPI, versioning |
+
+Short version of the plan:
+
+- [ ] **Phase 0–1** — one-line fixes, then the test harness and graceful shutdown (~1 day, most of the risk)
+- [ ] **Phase 2–3** — correctness bugs, then rate limiting and security headers
+- [ ] **Phase 4** — the breaking changes (bearer auth, `/api/v1/`, response envelope). Time-sensitive: cheap now, expensive once a client exists
+- [ ] **Phase 5+** — query layer, refresh tokens, operability, product features — justified by real users or data volume, not by principle
+
+### Still unplanned
+
+- **React frontend in `client/`.** `concurrently` sits in devDependencies for this and is currently unreferenced by any script — [Spec 04 / T2](features/04-tooling.md) covers removing it or wiring up the `dev` script it was installed for.
