@@ -48,3 +48,12 @@ Desktop.ini
 
 # Claude Code local settings (project skills stay tracked)
 .claude/settings.local.json
+
+# Client
+/client/build
+
+.DS_Store
+/client/.env.local
+/client/.env.development.local
+/client/.env.test.local
+/client/.env.production.local
