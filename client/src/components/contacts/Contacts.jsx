@@ -1,16 +1,29 @@
-import { useContacts } from '../../../context/contact/contactContext'
+import { TransitionGroup } from 'react-transition-group'
 
-import ContactItem from './ContactItem'
+import { useContacts } from '../../../context/contact/contactContext'
+import AnimatedContact from './AnimatedContact'
 
 const Contacts = () => {
-  const { contacts } = useContacts()
+  const { contacts, filter } = useContacts()
+
+  if (contacts.length === 0) {
+    return <h4>Please add a conact</h4>
+  }
+
+  const visible = filter
+    ? contacts.filter(
+        contact =>
+          contact.name.toLowerCase().includes(filter) ||
+          contact.email.toLowerCase().includes(filter),
+      )
+    : contacts
 
   return (
-    <>
-      {contacts.map(contact => (
-        <ContactItem key={contact.id} contact={contact} />
+    <TransitionGroup>
+      {visible.map(contact => (
+        <AnimatedContact key={contact.id} contact={contact} />
       ))}
-    </>
+    </TransitionGroup>
   )
 }
 

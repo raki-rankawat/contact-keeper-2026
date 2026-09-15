@@ -41,6 +41,20 @@ const contactReducer = (state, action) => {
         ),
       }
 
+    // Store only the query; the visible list is derived in <Contacts> so it
+    // never goes stale when contacts are added, updated, or deleted.
+    case FILTER_CONTACTS:
+      return {
+        ...state,
+        filter: action.payload.trim().toLowerCase(),
+      }
+
+    case CLEAR_FILTER:
+      return {
+        ...state,
+        filter: '',
+      }
+
     default:
       return state
   }

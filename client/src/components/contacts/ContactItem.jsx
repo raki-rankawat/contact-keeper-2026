@@ -3,7 +3,7 @@ import { FaPhone } from 'react-icons/fa'
 
 import { useContacts } from '../../../context/contact/contactContext'
 
-const ContactItem = ({ contact }) => {
+const ContactItem = ({ contact, ref }) => {
   const { onDelete, setCurrent, clearCurrent } = useContacts()
 
   const { id, name, email, phone, type } = contact
@@ -14,7 +14,7 @@ const ContactItem = ({ contact }) => {
   }
 
   return (
-    <div className='card bg-light'>
+    <div ref={ref} className='card bg-light'>
       <h3 className='text-primary text-left'>
         {name}{' '}
         <span

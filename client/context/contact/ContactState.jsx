@@ -7,9 +7,9 @@ import {
   DELETE_CONTACT,
   SET_CURRENT,
   CLEAR_CURRENT,
+  UPDATE_CONTACT,
   FILTER_CONTACTS,
   CLEAR_FILTER,
-  UPDATE_CONTACT,
 } from '../types'
 
 const initialState = {
@@ -37,6 +37,7 @@ const initialState = {
     },
   ],
   current: null,
+  filter: '',
 }
 
 const ContactState = ({ children }) => {
@@ -60,7 +61,7 @@ const ContactState = ({ children }) => {
 
   // Clear Current Contact
   const clearCurrent = () => {
-    dispatch({ type: SET_CURRENT })
+    dispatch({ type: CLEAR_CURRENT })
   }
 
   // Update Contact
@@ -69,8 +70,14 @@ const ContactState = ({ children }) => {
   }
 
   // Filter Contacts
+  const filterContacts = text => {
+    dispatch({ type: FILTER_CONTACTS, payload: text })
+  }
 
   // Clear Filter
+  const clearFilter = () => {
+    dispatch({ type: CLEAR_FILTER })
+  }
 
   return (
     <ContactContext.Provider
@@ -81,6 +88,8 @@ const ContactState = ({ children }) => {
         setCurrent,
         clearCurrent,
         updateContact,
+        filterContacts,
+        clearFilter,
       }}
     >
       {children}

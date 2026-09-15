@@ -1,6 +1,7 @@
 import ContactForm from '../components/contacts/ContactForm'
 import Contacts from '../components/contacts/Contacts'
 import { useContacts } from '../../context/contact/contactContext'
+import ContactFilter from '../components/contacts/ContactFilter'
 
 const Home = () => {
   const { current } = useContacts()
@@ -11,6 +12,7 @@ const Home = () => {
         <ContactForm key={current?.id ?? 'new'} />
       </div>
       <div>
+        <ContactFilter />
         <Contacts />
       </div>
     </div>
