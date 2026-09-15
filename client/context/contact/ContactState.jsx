@@ -9,6 +9,7 @@ import {
   CLEAR_CURRENT,
   FILTER_CONTACTS,
   CLEAR_FILTER,
+  UPDATE_CONTACT,
 } from '../types'
 
 const initialState = {
@@ -35,6 +36,7 @@ const initialState = {
       type: 'professional',
     },
   ],
+  current: null,
 }
 
 const ContactState = ({ children }) => {
@@ -47,19 +49,40 @@ const ContactState = ({ children }) => {
   }
 
   // Delete Contact
+  const onDelete = id => {
+    dispatch({ type: DELETE_CONTACT, payload: id })
+  }
 
   // Set Current Contact
+  const setCurrent = contact => {
+    dispatch({ type: SET_CURRENT, payload: contact })
+  }
 
   // Clear Current Contact
+  const clearCurrent = () => {
+    dispatch({ type: SET_CURRENT })
+  }
 
   // Update Contact
+  const updateContact = contact => {
+    dispatch({ type: UPDATE_CONTACT, payload: contact })
+  }
 
   // Filter Contacts
 
   // Clear Filter
 
   return (
-    <ContactContext.Provider value={{ ...state, addContact }}>
+    <ContactContext.Provider
+      value={{
+        ...state,
+        addContact,
+        onDelete,
+        setCurrent,
+        clearCurrent,
+        updateContact,
+      }}
+    >
       {children}
     </ContactContext.Provider>
   )

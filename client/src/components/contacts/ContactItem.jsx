@@ -1,5 +1,17 @@
+import { MdEmail } from 'react-icons/md'
+import { FaPhone } from 'react-icons/fa'
+
+import { useContacts } from '../../../context/contact/contactContext'
+
 const ContactItem = ({ contact }) => {
+  const { onDelete, setCurrent, clearCurrent } = useContacts()
+
   const { id, name, email, phone, type } = contact
+
+  const handleDelete = () => {
+    onDelete(id)
+    clearCurrent()
+  }
 
   return (
     <div className='card bg-light'>
@@ -16,13 +28,28 @@ const ContactItem = ({ contact }) => {
         </span>
       </h3>
       <ul className='list'>
-        {email && <li>{email}</li>}
-        {phone && <li>{phone}</li>}
+        {email && (
+          <li className='flex-align'>
+            <MdEmail /> {email}
+          </li>
+        )}
+        {phone && (
+          <li className='flex-align'>
+            <FaPhone /> {phone}
+          </li>
+        )}
       </ul>
 
       <p>
-        <button className='btn btn-dark btn-sm'>Edit</button>
-        <button className='btn btn-danger btn-sm'>Delete</button>
+        <button
+          className='btn btn-dark btn-sm'
+          onClick={() => setCurrent(contact)}
+        >
+          Edit
+        </button>
+        <button className='btn btn-danger btn-sm' onClick={handleDelete}>
+          Delete
+        </button>
       </p>
     </div>
   )

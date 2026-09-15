@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 const Navbar = ({ title }) => {
   return (
     <div className='navbar bg-primary'>
-      <div className='logo'>
+      <div className='flex-align'>
         <MdOutlinePermContactCalendar /> <span>{title}</span>
       </div>
 

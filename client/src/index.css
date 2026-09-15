@@ -48,6 +48,12 @@ img {
   padding: 0 2rem;
 }
 
+.flex-align {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
 /* Text Styles*/
 .x-large {
   font-size: 4rem;
@@ -364,12 +370,6 @@ table th {
   border-bottom: solid 1px var(--primary-color);
   opacity: 0.9;
   margin-bottom: 1rem;
-}
-
-.navbar .logo {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
 }
 
 .navbar ul {
