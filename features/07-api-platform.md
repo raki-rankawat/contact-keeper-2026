@@ -172,8 +172,9 @@ Routes are mounted at `/api/auth`, `/api/users`, `/api/contacts` in
 the bearer header (A1), the paginated response envelope (F3), the collapsed 401→404 in D2.
 With no version namespace, every one of those forces a lockstep client deploy.
 
-This is cheap now and expensive once clients exist, which is the entire argument for doing
-it before they do.
+This is cheap now and expensive once a client consumes the API, which is the entire
+argument for doing it first. The React client in `client/` exists but makes no API calls
+yet, so the window is still open.
 
 **Design**
 A URL segment is the least clever option and the easiest to debug — a header-based scheme
@@ -234,7 +235,7 @@ client should branch on `INVALID_CREDENTIALS`, not on matching the string
 `'Invalid credentials'`.
 
 This is breaking for every endpoint at once, which is the argument for doing it now while
-no client exists — and the argument for doing it alongside P5, so the change lands as v1's
+no client consumes the API — and the argument for doing it alongside P5, so the change lands as v1's
 shape rather than as a break.
 
 F3 changes the list response shape anyway. Sequence these together rather than breaking the

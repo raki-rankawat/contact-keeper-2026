@@ -1,33 +1,37 @@
 # Contact Keeper 2026
 
-A REST API for managing personal contacts. Users register, log in with a JWT, and get a private contact list that only they can read or modify.
+A contact manager: a REST API where users register, log in with a JWT, and get a private contact list that only they can read or modify, plus a React client.
 
-> **Status:** backend only. The React frontend is not built yet — see [Roadmap](#roadmap).
+> **Status:** the API is complete. The React client in `client/` can add, edit, delete, filter, and animate contacts, but it keeps them **in memory** (seeded with sample data) and does not call the API yet. It has no login either. See [Roadmap](#roadmap).
 
 ## Tech stack
 
 | | |
 | --- | --- |
-| Runtime | Node.js (CommonJS) |
-| Framework | Express 5 |
+| API runtime | Node.js (CommonJS) |
+| API framework | Express 5 |
 | Database | MongoDB via Mongoose 9 |
 | Auth | JSON Web Tokens (`jsonwebtoken`) + `bcryptjs` |
 | Validation | `express-validator` |
-| Dev | `nodemon` |
+| Client | React 19 + Vite 8 (ESM), React Router 7, `react-transition-group` |
+| Dev | `nodemon`, `concurrently`, ESLint (client only) |
 
 ## Getting started
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20.19+ (Vite 8's minimum; the API alone runs on 18+)
 - A MongoDB database (local `mongod` or a MongoDB Atlas cluster)
 
 ### Install
+
+The client has its own `package.json`, so install both:
 
 ```bash
 git clone <repo-url>
 cd contact-keeper-2026
 npm install
+npm --prefix client install
 ```
 
 ### Configure
@@ -53,11 +57,15 @@ cp .env.example .env
 ### Run
 
 ```bash
-npm run server   # development, auto-restarts on file changes
-npm start        # plain node
+npm run dev          # API + client together
+npm run dev:server   # API only, auto-restarts on file changes
+npm run dev:client   # client only
+npm start            # API with plain node
 ```
 
-The server logs `Server started on port 5000` and `MongoDB connected — db: dev-db` when it comes up healthy.
+The API logs `Server started on port 5000` and `MongoDB connected — db: dev-db` when it comes up healthy. The client is served by Vite at `http://localhost:5173`.
+
+Because the client doesn't call the API yet, `npm run dev:client` works on its own, with no MongoDB or `.env` needed.
 
 ## Authentication
 
@@ -204,15 +212,22 @@ middleware/   auth (JWT), validate (express-validator), errorHandler
 utils/        token generation
 features/     specs for planned work — not code
 server.js     app bootstrap and route mounting
+
+client/
+  context/    React Context + useReducer state (contacts, current, filter)
+  src/
+    pages/       Home, About
+    components/  contacts/ (form, list, item, filter), layout/ (navbar)
 ```
 
-Requests flow **route → validation → auth → controller → model**. Routes own the validation rules; controllers assume a valid body and an authenticated `req.user`.
+API requests flow **route → validation → auth → controller → model**. Routes own the validation rules; controllers assume a valid body and an authenticated `req.user`.
 
 ## Roadmap
 
 Planned work lives in [features/](features/) as written specs — problem, fix, and
-acceptance criteria per item. Nothing in them is implemented yet; the API reference above
-describes what the code actually does today.
+acceptance criteria per item. Apart from T2 (`concurrently` now drives `npm run dev`),
+nothing in them is implemented yet; the API reference above describes what the code
+actually does today.
 
 **Start with [features/00-implementation-plan.md](features/00-implementation-plan.md)** — it
 sequences all 44 items by dependency and says where to stop. The specs themselves are
@@ -232,9 +247,13 @@ Short version of the plan:
 
 - [ ] **Phase 0–1** — one-line fixes, then the test harness and graceful shutdown (~1 day, most of the risk)
 - [ ] **Phase 2–3** — correctness bugs, then rate limiting and security headers
-- [ ] **Phase 4** — the breaking changes (bearer auth, `/api/v1/`, response envelope). Time-sensitive: cheap now, expensive once a client exists
+- [ ] **Phase 4** — the breaking changes (bearer auth, `/api/v1/`, response envelope). Time-sensitive: cheap while the client has no API calls, expensive once it does
 - [ ] **Phase 5+** — query layer, refresh tokens, operability, product features — justified by real users or data volume, not by principle
 
 ### Still unplanned
 
-- **React frontend in `client/`.** `concurrently` sits in devDependencies for this and is currently unreferenced by any script — [Spec 04 / T2](features/04-tooling.md) covers removing it or wiring up the `dev` script it was installed for.
+The client work has no specs. It is being built step by step, and these pieces are still missing:
+
+- **Connect the client to the API.** Replace the in-memory seed data with `axios` calls, and fix the dev proxy first. The root `package.json` has a Create React App `proxy` field that Vite ignores. See [Spec 02 / S2](features/02-security-hardening.md).
+- **Auth UI.** Register and login pages, token storage, and protected routes.
+- **Alerts.** The `SET_ALERT` / `REMOVE_ALERT` action types are declared but not implemented.

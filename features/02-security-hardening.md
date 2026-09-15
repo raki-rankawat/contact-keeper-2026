@@ -55,16 +55,35 @@ request together.
 
 **Problem**
 [server.js](../server.js) mounts only `express.json`. No security response headers, and no
-CORS policy. `concurrently` sits in devDependencies for a client app that does not exist
-yet — when that client arrives, every browser request will fail on the same-origin policy.
+CORS policy. The React client in `client/` is served by Vite on `http://localhost:5173`
+and does not call the API yet. The first request it makes to `http://localhost:5000` from
+the browser will fail on the same-origin policy.
+
+The proxy that would hide this in development does not work either. The root
+[package.json](../package.json) has `"proxy": "http://localhost:5000"`, which is a Create React App
+field. Vite ignores it, and it sits in the root package rather than `client/`.
+[client/vite.config.js](../client/vite.config.js) has no `server.proxy`, so a relative
+`/api/...` call reaches the Vite dev server instead of Express.
 
 **Fix**
 Add both as the first middleware in `server.js`, before the body parser:
 
 ```js
 app.use(helmet())
-app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:3000' }))
+app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173' }))
 ```
+
+For local development, also replace the dead root `proxy` field with a Vite proxy, so the
+client can use relative `/api` URLs:
+
+```js
+// client/vite.config.js
+server: { proxy: { '/api': 'http://localhost:5000' } },
+```
+
+The two do not replace each other. With the proxy, development requests are same-origin
+and never exercise CORS. `cors` is still needed wherever the client and API are deployed on
+different origins, so test CORS with the proxy off.
 
 Read the allowed origin from the environment rather than hardcoding it, and add
 `CLIENT_URL` to [.env.example](../.env.example). Do **not** add it to the required list in
@@ -80,6 +99,8 @@ to miss and fails only in the browser, never in Postman.
 - A cross-origin request from `CLIENT_URL` carrying `x-auth-token` completes, preflight
   included.
 - An unlisted origin is rejected.
+- The root `package.json` no longer has a `proxy` field. With `npm run dev`, a relative
+  `/api/...` request from the client reaches Express.
 
 ---
 

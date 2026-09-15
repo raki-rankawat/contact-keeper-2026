@@ -105,8 +105,8 @@ Return metadata alongside the rows, not bare:
 ```
 
 This changes the response shape of an existing endpoint. It is a breaking change for any
-client already consuming the bare array — worth doing now, while there is no client, rather
-than later.
+client already consuming the bare array. Do it now, while the React client still uses
+in-memory data and does not read this endpoint, rather than later.
 
 Pairs directly with the compound index in [Spec 03 / D1](03-design-and-performance.md):
 `{ user: 1, date: -1 }` serves the default sort. Sorting by `name` wants its own index

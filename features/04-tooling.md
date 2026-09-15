@@ -56,6 +56,11 @@ Cover first, in this order:
 
 ## T2 — `concurrently` is an unused dependency
 
+**Status:** resolved by the second option below. The client scaffold commit (`9dd6eaf`)
+added `client/` and a `dev` script —
+`concurrently "npm:dev:client" "npm:dev:server"` — and renamed `server` to `dev:server`.
+Both devDependencies are now referenced. The original problem is kept for the record.
+
 **Severity:** low.
 
 **Problem**
@@ -77,8 +82,9 @@ it exists for, so the dependency is at least honest:
 Do one or the other. Leaving it unreferenced is the only wrong answer.
 
 **Acceptance criteria**
-- Every devDependency is referenced by a script or a config file.
-- `npm run server` and `npm start` are unaffected.
+- [x] Every devDependency is referenced by a script or a config file.
+- [x] `npm start` is unaffected; `npm run server` became `npm run dev:server` (a deliberate
+  rename, same command).
 
 ---
 
@@ -149,7 +155,9 @@ contradict each other, which is how this survived.
 **Severity:** low — deliberate today, worth revisiting.
 
 **Problem**
-No ESLint, no Prettier. The style rules in [CLAUDE.md](../CLAUDE.md) — no semicolons,
+No ESLint, no Prettier on the backend. (The client in `client/` has its own ESLint config
+from the Vite scaffold, scoped to `client/` and not covering any backend file.) The style
+rules in [CLAUDE.md](../CLAUDE.md) — no semicolons,
 single quotes, 2-space indent, trailing commas, arrow functions — are enforced by reading
 the surrounding file and matching it. That holds for one developer and stops holding at
 two, or at the first contribution from an editor configured differently.

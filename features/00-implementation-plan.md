@@ -14,7 +14,8 @@ Effort figures are rough and assume familiarity with the codebase.
 
 If you do nothing else, do **Phase 0 and Phase 1** — roughly one day, and it removes most
 of the risk in the project. Phase 4 is the one with a deadline: it gets much more expensive
-the moment a client exists.
+the moment a client consumes the API. A React client now exists in `client/`, but it still
+runs on in-memory data — the deadline is the first commit that wires it to the API.
 
 | Phase | What | Effort | Skippable? |
 |---|---|---|---|
@@ -22,7 +23,7 @@ the moment a client exists.
 | 1 | Test harness + shutdown | ~half day | No |
 | 2 | Correctness bugs | ~half day | No |
 | 3 | Security baseline | ~2h | Not if deployed |
-| 4 | **Breaking changes — do before any client** | ~1 day | No, and it is time-sensitive |
+| 4 | **Breaking changes — do before the client calls the API** | ~1 day | No, and it is time-sensitive |
 | 5 | Query layer | ~1 day | Yes, until data grows |
 | 6 | Refresh tokens | ~2–3 days | Yes, if hourly logout is tolerable |
 | 7 | Operability | ~1 day | Only if deployed |
@@ -45,7 +46,8 @@ the test harness.
 - [ ] **C1** — uncomment `JWT_SECRET` in `.env.example` ([Spec 01](01-correctness-bugs.md))
 - [ ] **T4** — drop the hardcoded `dbName: 'dev-db'` ([Spec 04](04-tooling.md))
 - [ ] **T3** — `ref: 'users'` → `ref: 'user'` ([Spec 04](04-tooling.md))
-- [ ] **T2** — remove the unused `concurrently` dependency ([Spec 04](04-tooling.md))
+- [x] **T2** — `concurrently` resolved the other way: kept, and wired to `npm run dev` when
+      the client was scaffolded ([Spec 04](04-tooling.md))
 - [ ] **D6** — `express.json({ extended: false })` → `express.json()` ([Spec 03](03-design-and-performance.md))
 
 T4 is the one that matters beyond tidiness: until it is fixed, a correct production
@@ -124,6 +126,12 @@ Every item here changes an existing contract. Right now that costs nothing, beca
 client consumes this API. Each of them gets materially more expensive the day one does —
 and P5 exists precisely to make later breaks cheap, so it is self-defeating to postpone.
 
+That day is close. The React client in `client/` already has add, edit, delete, and filter
+working against in-memory state; its next natural step is swapping that state for API calls.
+Either land this phase before that step, or build the client's API layer against the Phase 4
+shapes (bearer header, `/api/v1/`, envelope) and land both together. Writing the client
+against today's `x-auth-token` and bare arrays means rewriting it here.
+
 Order within the phase: **A1 → P5 → P7 → D2**. A1 touches every controller's `req.user`
 access; doing it before P7 rewrites those same response lines avoids editing them twice.
 
@@ -135,8 +143,9 @@ Two notes:
   the pattern to repeat. Update that section in the same commit, or the docs and the code
   diverge immediately.
 
-**Update `CLAUDE.md` at the end of this phase** — the auth header, the route prefix, the
-response shape, and the ownership pattern are all described there and will all be wrong.
+**Update `CLAUDE.md` and `README.md` at the end of this phase** — the auth header, the
+route prefix, the response shape, and the ownership pattern are all described there and
+will all be wrong.
 
 ---
 
