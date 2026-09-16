@@ -11,6 +11,12 @@ import Register from './pages/auth/Register'
 import Login from './pages/auth/Login'
 import Alerts from './components/Alerts'
 
+import setAuthToken from '../utils/setAuthToken'
+
+if (localStorage.token) {
+  setAuthToken(localStorage.token)
+}
+
 const App = () => {
   return (
     <AuthState>

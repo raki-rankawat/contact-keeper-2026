@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAlert } from '../../../context/alert/alertContext'
 import { useAuth } from '../../../context/auth/authContext'
 
@@ -11,11 +12,18 @@ const emptyUser = {
 
 const Register = () => {
   const { setAlert } = useAlert()
-  const { register, error, clearErrors } = useAuth()
+  const { register, error, clearErrors, isAuthenticated } = useAuth()
+  const navigate = useNavigate()
 
   const [user, setUser] = useState(emptyUser)
 
   const { name, email, password, password2 } = user
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/')
+    }
+  }, [isAuthenticated, navigate])
 
   useEffect(() => {
     if (error !== null) {

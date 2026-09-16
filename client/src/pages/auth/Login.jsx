@@ -1,12 +1,35 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+
+import { useAlert } from '../../../context/alert/alertContext'
+import { useAuth } from '../../../context/auth/authContext'
+
+const emptyUser = {
+  email: '',
+  password: '',
+}
 
 const Login = () => {
-  const [user, setUser] = useState({
-    email: '',
-    password: '',
-  })
+  const { isAuthenticated, error, clearErrors, login } = useAuth()
+  const { setAlert } = useAlert()
+  const navigate = useNavigate()
+
+  const [user, setUser] = useState(emptyUser)
 
   const { email, password } = user
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/')
+    }
+  }, [isAuthenticated, navigate])
+
+  useEffect(() => {
+    if (error !== null) {
+      setAlert(error, 'danger')
+      clearErrors()
+    }
+  }, [error, clearErrors, setAlert])
 
   const onChange = e => {
     setUser(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -14,6 +37,13 @@ const Login = () => {
 
   const onSubmit = e => {
     e.preventDefault()
+
+    if (email === '' || password === '') {
+      setAlert('Please fill in all fields', 'danger')
+    } else {
+      login(user)
+      setUser(emptyUser)
+    }
   }
 
   return (
