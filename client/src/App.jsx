@@ -6,6 +6,8 @@ import AuthState from '../context/auth/AuthState'
 
 import Home from './pages/Home'
 import About from './pages/About'
+import Register from './pages/auth/Register'
+import Login from './pages/auth/Login'
 
 const App = () => {
   return (
@@ -17,6 +19,8 @@ const App = () => {
             <Routes>
               <Route path='/' element={<Home />} />
               <Route path='/about' element={<About />} />
+              <Route path='/register' element={<Register />} />
+              <Route path='/login' element={<Login />} />
             </Routes>
           </div>
         </Router>
