@@ -1,17 +1,28 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAlert } from '../../../context/alert/alertContext'
+import { useAuth } from '../../../context/auth/authContext'
+
+const emptyUser = {
+  name: '',
+  email: '',
+  password: '',
+  password2: '',
+}
 
 const Register = () => {
   const { setAlert } = useAlert()
+  const { register, error, clearErrors } = useAuth()
 
-  const [user, setUser] = useState({
-    name: '',
-    email: '',
-    password: '',
-    password2: '',
-  })
+  const [user, setUser] = useState(emptyUser)
 
   const { name, email, password, password2 } = user
+
+  useEffect(() => {
+    if (error !== null) {
+      setAlert(error, 'danger')
+      clearErrors()
+    }
+  }, [error, clearErrors, setAlert])
 
   const onChange = e => {
     setUser(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -25,7 +36,8 @@ const Register = () => {
     } else if (password !== password2) {
       setAlert('Password do not match', 'danger')
     } else {
-      console.log('done')
+      register({ name, email, password })
+      setUser(emptyUser)
     }
   }
 
