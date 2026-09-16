@@ -3,6 +3,7 @@ import {
   CLEAR_ERRORS,
   LOGIN_FAIL,
   LOGIN_SUCCESS,
+  LOGOUT,
   REGISTER_FAIL,
   REGISTER_SUCCESS,
   USER_LOADED,
@@ -30,6 +31,7 @@ const authReducer = (state, action) => {
     case LOGIN_FAIL:
     case AUTH_ERROR:
     case REGISTER_FAIL:
+    case LOGOUT:
       return {
         ...state,
         token: null,

@@ -8,6 +8,7 @@ import {
   CLEAR_ERRORS,
   LOGIN_FAIL,
   LOGIN_SUCCESS,
+  LOGOUT,
   REGISTER_FAIL,
   REGISTER_SUCCESS,
   USER_LOADED,
@@ -115,7 +116,9 @@ const AuthState = ({ children }) => {
   )
 
   // Logout
-  const logout = () => {}
+  const logout = () => {
+    dispatch({ type: LOGOUT })
+  }
 
   // Clear Errors
   const clearErrors = useCallback(() => {

@@ -6,12 +6,14 @@ import ContactFilter from '../components/contacts/ContactFilter'
 import { useEffect } from 'react'
 
 const Home = () => {
-  const { loadUser } = useAuth()
+  const { loadUser, token } = useAuth()
   const { current } = useContacts()
 
   useEffect(() => {
-    loadUser()
-  }, [loadUser])
+    if (token !== null) {
+      loadUser()
+    }
+  }, [loadUser, token])
 
   return (
     <div className='grid-2'>
