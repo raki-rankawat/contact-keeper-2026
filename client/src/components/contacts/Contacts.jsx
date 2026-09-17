@@ -33,7 +33,7 @@ const Contacts = () => {
   return (
     <TransitionGroup>
       {visible?.map(contact => (
-        <AnimatedContact key={contact.id} contact={contact} />
+        <AnimatedContact key={contact._id} contact={contact} />
       ))}
     </TransitionGroup>
   )

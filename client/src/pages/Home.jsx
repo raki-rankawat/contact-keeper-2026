@@ -18,7 +18,7 @@ const Home = () => {
   return (
     <div className='grid-2'>
       <div>
-        <ContactForm key={current?.id ?? 'new'} />
+        <ContactForm key={current?._id ?? 'new'} />
       </div>
       <div>
         <ContactFilter />

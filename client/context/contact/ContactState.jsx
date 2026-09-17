@@ -42,8 +42,7 @@ const ContactState = ({ children }) => {
 
       dispatch({
         type: CONTACT_ERROR,
-        payload:
-          data?.errors?.[0]?.msg ?? data?.msg ?? 'Failed to load contacts',
+        payload: data?.errors?.[0]?.msg ?? data?.msg ?? 'Failed to load',
       })
     }
   }
@@ -63,14 +62,44 @@ const ContactState = ({ children }) => {
 
       dispatch({
         type: CONTACT_ERROR,
-        payload: data?.errors?.[0]?.msg ?? data?.msg ?? 'Failed to add contact',
+        payload: data?.errors?.[0]?.msg ?? data?.msg ?? 'Failed to add',
+      })
+    }
+  }
+
+  // Update Contact
+  const updateContact = async contact => {
+    try {
+      const res = await axios.put(
+        `/api/contacts/${contact._id}`,
+        contact,
+        config,
+      )
+
+      dispatch({ type: UPDATE_CONTACT, payload: res.data })
+    } catch (err) {
+      const data = err.response?.data
+
+      dispatch({
+        type: CONTACT_ERROR,
+        payload: data?.errors?.[0]?.msg ?? data?.msg ?? 'Failed to update',
       })
     }
   }
 
   // Delete Contact
-  const onDelete = id => {
-    dispatch({ type: DELETE_CONTACT, payload: id })
+  const onDelete = async id => {
+    try {
+      await axios.delete(`/api/contacts/${id}`)
+      dispatch({ type: DELETE_CONTACT, payload: id })
+    } catch (err) {
+      const data = err.response?.data
+
+      dispatch({
+        type: CONTACT_ERROR,
+        payload: data?.errors?.[0]?.msg ?? data?.msg ?? 'Failed to delete',
+      })
+    }
   }
 
   // Set Current Contact
@@ -81,11 +110,6 @@ const ContactState = ({ children }) => {
   // Clear Current Contact
   const clearCurrent = () => {
     dispatch({ type: CLEAR_CURRENT })
-  }
-
-  // Update Contact
-  const updateContact = contact => {
-    dispatch({ type: UPDATE_CONTACT, payload: contact })
   }
 
   // Filter Contacts
