@@ -69,6 +69,11 @@ entirely for partial updates — it builds `contactFields` behind `if (name)`, `
 `if (phone)`, `if (type)` guards. The route forbids the very requests the controller was
 designed to serve: updating only a phone number is impossible without re-sending the name.
 
+The React client is not affected by the `name` requirement, because its edit form always sends
+the whole contact. It is affected by the guards themselves: `if (email)` drops an empty string,
+so clearing a field in the edit form does nothing. The API returns the old value, and the form
+shows it again.
+
 **Fix**
 Give PUT its own validation chain rather than reusing `regCheck`. Each field optional,
 validated only when present:
@@ -81,9 +86,14 @@ const updateCheck = [
 
 Keep `regCheck` on POST, where a required `name` is correct.
 
+In the controller, replace the truthiness guards with `!== undefined` checks, so "absent"
+means "leave alone" and an empty string means "clear". `name` stays protected by the
+validation chain above.
+
 **Acceptance criteria**
 - `PUT /api/contacts/:id` with body `{ "phone": "555-0100" }` succeeds and leaves `name`
   untouched.
+- `PUT` with `{ "phone": "" }` clears the phone.
 - `PUT` with `{ "name": "" }` still returns 400.
 - `POST /api/contacts` with no `name` still returns 400.
 

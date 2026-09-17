@@ -153,11 +153,15 @@ piece of work in any of these specs. Two viable directions:
   stored server-side and exchangeable at `POST /api/auth/refresh`. Gives real revocation.
   Needs a new collection, a rotation strategy, and reuse detection.
 - **Longer expiry.** Raise to 24h and accept that revocation is not possible. A few
-  characters of work, honest about its limits, and appropriate while no client logs in.
+  characters of work, and honest about its limits.
 
-Recommendation: take the second now, and come back to this when the client adds login. The
-client app in `client/` exists but has no auth UI yet. The right refresh-token design
-depends on whether the client can hold an httpOnly cookie. Whichever
+The client in `client/` now logs in, so the one-hour expiry is visible. The client keeps the
+token in `localStorage` and does nothing when it expires. The UI keeps showing the user as
+logged in until the next page reload, and contact requests fail with 401 in the meantime.
+
+Recommendation: take the second now. The refresh-token design depends on whether the client
+can hold an httpOnly cookie, and that depends on how the client and API are deployed, which
+is not decided yet. Moving to it also means taking the token out of `localStorage`. Whichever
 is chosen, record it — the current 3600 reads like a default nobody examined.
 
 **Acceptance criteria**

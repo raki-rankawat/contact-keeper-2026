@@ -172,9 +172,13 @@ Routes are mounted at `/api/auth`, `/api/users`, `/api/contacts` in
 the bearer header (A1), the paginated response envelope (F3), the collapsed 401→404 in D2.
 With no version namespace, every one of those forces a lockstep client deploy.
 
-This is cheap now and expensive once a client consumes the API, which is the entire
-argument for doing it first. The React client in `client/` exists but makes no API calls
-yet, so the window is still open.
+This was cheapest before any client consumed the API, which was the argument for doing it
+first. That window has closed. The React client in `client/` now has seven hardcoded
+`/api/...` call sites, in `client/context/auth/AuthState.jsx` and
+`client/context/contact/ContactState.jsx`. Because the client ships from this repo, the cost
+is still one commit: update those call sites along with the server. While there, set
+`axios.defaults.baseURL` once, so moving to v2 is a one-line change in the client. The Vite dev
+proxy matches on the `/api` prefix and needs no change.
 
 **Design**
 A URL segment is the least clever option and the easiest to debug — a header-based scheme
@@ -234,8 +238,11 @@ consistent `error` object with a machine-readable code. Codes matter more than m
 client should branch on `INVALID_CREDENTIALS`, not on matching the string
 `'Invalid credentials'`.
 
-This is breaking for every endpoint at once, which is the argument for doing it now while
-no client consumes the API — and the argument for doing it alongside P5, so the change lands as v1's
+This is breaking for every endpoint at once, and the React client already depends on today's
+mixed shapes. Each of its seven failure handlers reads
+`data?.errors?.[0]?.msg ?? data?.msg` to cover both error formats, and its success paths read
+`res.data` directly. Update those in the same commit. A single shared reader for the new error
+shape is the client-side half of this item. Do it alongside P5, so the change lands as v1's
 shape rather than as a break.
 
 F3 changes the list response shape anyway. Sequence these together rather than breaking the
@@ -244,5 +251,6 @@ same endpoint twice.
 **Acceptance criteria**
 - Every endpoint, success and error alike, returns the agreed shape.
 - Every error carries a stable machine-readable code.
-- One client-side handler can process any error response.
+- One client-side handler can process any error response, and the client in `client/` uses
+  it instead of the fallback it repeats in each handler.
 - The shape is documented in P4's spec.

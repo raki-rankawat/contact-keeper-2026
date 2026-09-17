@@ -51,19 +51,25 @@ request together.
 
 ## S2 — Missing `helmet` and `cors`
 
-**Severity:** medium — `cors` becomes blocking the moment a browser client exists.
+**Severity:** medium — `cors` becomes blocking as soon as the client and API are served from
+different origins.
+
+**Status:** half done. The dev proxy is in place; `helmet` and `cors` are not.
 
 **Problem**
-[server.js](../server.js) mounts only `express.json`. No security response headers, and no
-CORS policy. The React client in `client/` is served by Vite on `http://localhost:5173`
-and does not call the API yet. The first request it makes to `http://localhost:5000` from
-the browser will fail on the same-origin policy.
+[server.js](../server.js) mounts only `express.json`. It sets no security response headers
+and has no CORS policy. The React client in `client/` calls the API, and in development that
+works only because the Vite dev server proxies `/api` to Express, which makes every request
+same-origin. A build served from a different origin than the API will fail on the
+same-origin policy.
 
-The proxy that would hide this in development does not work either. The root
-[package.json](../package.json) has `"proxy": "http://localhost:5000"`, which is a Create React App
-field. Vite ignores it, and it sits in the root package rather than `client/`.
-[client/vite.config.js](../client/vite.config.js) has no `server.proxy`, so a relative
-`/api/...` call reaches the Vite dev server instead of Express.
+The proxy half was fixed alongside the client's first API calls. The dead Create React App
+`"proxy"` field is gone from the root [package.json](../package.json), and
+[client/vite.config.js](../client/vite.config.js) now has:
+
+```js
+server: { proxy: { '/api': 'http://localhost:5000' } },
+```
 
 **Fix**
 Add both as the first middleware in `server.js`, before the body parser:
@@ -73,15 +79,7 @@ app.use(helmet())
 app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173' }))
 ```
 
-For local development, also replace the dead root `proxy` field with a Vite proxy, so the
-client can use relative `/api` URLs:
-
-```js
-// client/vite.config.js
-server: { proxy: { '/api': 'http://localhost:5000' } },
-```
-
-The two do not replace each other. With the proxy, development requests are same-origin
+The proxy and `cors` do not replace each other. With the proxy, development requests are same-origin
 and never exercise CORS. `cors` is still needed wherever the client and API are deployed on
 different origins, so test CORS with the proxy off.
 
@@ -99,8 +97,8 @@ to miss and fails only in the browser, never in Postman.
 - A cross-origin request from `CLIENT_URL` carrying `x-auth-token` completes, preflight
   included.
 - An unlisted origin is rejected.
-- The root `package.json` no longer has a `proxy` field. With `npm run dev`, a relative
-  `/api/...` request from the client reaches Express.
+- **Done:** the root `package.json` no longer has a `proxy` field, and with `npm run dev` a
+  relative `/api/...` request from the client reaches Express.
 
 ---
 

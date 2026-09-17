@@ -45,6 +45,10 @@ prefer `Authorization`, fall back to `x-auth-token`, and log when the fallback f
 Remove the fallback once the log goes quiet. If nothing consumes it yet, cut over directly
 and skip the dual-read entirely.
 
+Today the only consumer is the React client in this repo, which ships with the API. Cut over
+directly, and change [client/utils/setAuthToken.js](../client/utils/setAuthToken.js) in the
+same commit. That file is the only place the client names the header.
+
 **Worth folding in while here.** The JWT payload is `{ user: { id } }`
 ([utils/generateToken.js](../utils/generateToken.js)), a nested shape from the same
 tutorial lineage. The registered claim for a subject is `sub`. Flattening to
@@ -56,6 +60,7 @@ header change or not at all, since both are breaking and one migration is cheape
 - `Authorization: Bearer <token>` authenticates on every private route.
 - A missing scheme, a wrong scheme, or a bare token returns 401.
 - The CORS `allowedHeaders` list names `Authorization`.
+- The client sends `Authorization: Bearer <token>` and no longer sends `x-auth-token`.
 - If the payload flattened: no controller still reads `req.user.id` from the old shape.
 
 ---
@@ -101,6 +106,12 @@ browser; the response body if it is native. This choice determines CSRF exposure
 it explicitly — the cookie path needs CSRF protection on the refresh endpoint, the body
 path does not.
 
+The client in `client/` keeps its single token in `localStorage`, where any script on the page
+can read it. Adopting this design means changing that as well: the access token goes into
+memory, as in the table above, and the refresh token goes into the cookie. Whether the cookie
+works depends on the client being served same-site with the API. That holds in development,
+where the Vite proxy makes requests same-origin, but no production setup exists yet.
+
 New model, roughly:
 
 ```js
@@ -137,8 +148,9 @@ It is an unauthenticated endpoint that performs a database lookup.
 `POST /api/auth/logout-all` to revoke every session for the user.
 
 **Why**
-There is no logout today, and no way to build one: a JWT is valid until it expires, so the
-client can only discard its copy. That is not logout, it is forgetting. "Log out all
+There is no server-side logout today, and no way to build one: a JWT is valid until it
+expires, so the client's Logout link can only discard its copy of the token. That is not
+logout, it is forgetting. "Log out all
 devices" after a password scare is impossible.
 
 **Design**

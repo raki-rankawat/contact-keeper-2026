@@ -2,7 +2,7 @@
 
 A contact manager: a REST API where users register, log in with a JWT, and get a private contact list that only they can read or modify, plus a React client.
 
-> **Status:** the API is complete. The React client in `client/` can add, edit, delete, filter, and animate contacts, but it keeps them **in memory** (seeded with sample data) and does not call the API yet. It has no login either. See [Roadmap](#roadmap).
+> **Status:** the API is complete. The React client in `client/` lets users register, log in, and log out, and it adds, edits, deletes, and filters contacts **through the API**. It runs only under the Vite dev server for now — there is no production setup. See [Roadmap](#roadmap).
 
 ## Tech stack
 
@@ -13,7 +13,7 @@ A contact manager: a REST API where users register, log in with a JWT, and get a
 | Database | MongoDB via Mongoose 9 |
 | Auth | JSON Web Tokens (`jsonwebtoken`) + `bcryptjs` |
 | Validation | `express-validator` |
-| Client | React 19 + Vite 8 (ESM), React Router 7, `react-transition-group` |
+| Client | React 19 + Vite 8 (ESM), React Router 7, `axios`, `react-transition-group` |
 | Dev | `nodemon`, `concurrently`, ESLint (client only) |
 
 ## Getting started
@@ -65,7 +65,7 @@ npm start            # API with plain node
 
 The API logs `Server started on port 5000` and `MongoDB connected — db: dev-db` when it comes up healthy. The client is served by Vite at `http://localhost:5173`.
 
-Because the client doesn't call the API yet, `npm run dev:client` works on its own, with no MongoDB or `.env` needed.
+The client calls the API through a Vite dev proxy: requests to `/api` on :5173 are forwarded to Express on :5000 (see `client/vite.config.js`). Use `npm run dev` to run both. `npm run dev:client` on its own serves the pages, but every login and contact request fails.
 
 ## Authentication
 
@@ -77,7 +77,7 @@ x-auth-token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 This is a custom header, **not** `Authorization: Bearer`. Tokens expire after **1 hour**, and there is no refresh endpoint — clients must log in again when a token expires.
 
-> **Planned change:** both of these are due to move to standards — `Authorization: Bearer` in [Spec 05 / A1](features/05-auth-features.md), and an access/refresh token split in [A2](features/05-auth-features.md). Treat the header as unstable if you are building a client now.
+> **Planned change:** both of these are due to move to standards — `Authorization: Bearer` in [Spec 05 / A1](features/05-auth-features.md), and an access/refresh token split in [A2](features/05-auth-features.md). Treat the header as unstable if you are building a client now. The bundled client sets it in one place, `client/utils/setAuthToken.js`.
 
 Requests to a private route without a token get `401 { "msg": "No token, authorization denied" }`; with a bad or expired token, `401 { "msg": "Invalid token, authorization denied" }`.
 
@@ -214,10 +214,12 @@ features/     specs for planned work — not code
 server.js     app bootstrap and route mounting
 
 client/
-  context/    React Context + useReducer state (contacts, current, filter)
+  context/    React Context + useReducer providers — auth, contact, alert
+  utils/      setAuthToken (puts the token on axios as x-auth-token)
   src/
-    pages/       Home, About
-    components/  contacts/ (form, list, item, filter), layout/ (navbar)
+    pages/       Home, About, NotFound, auth/ (Login, Register)
+    routes/      PrivateRoute
+    components/  contacts/ (form, list, item, filter), layout/ (navbar, spinner), Alerts
 ```
 
 API requests flow **route → validation → auth → controller → model**. Routes own the validation rules; controllers assume a valid body and an authenticated `req.user`.
@@ -225,9 +227,9 @@ API requests flow **route → validation → auth → controller → model**. Ro
 ## Roadmap
 
 Planned work lives in [features/](features/) as written specs — problem, fix, and
-acceptance criteria per item. Apart from T2 (`concurrently` now drives `npm run dev`),
-nothing in them is implemented yet; the API reference above describes what the code
-actually does today.
+acceptance criteria per item. Apart from T2 (`concurrently` now drives `npm run dev`) and
+the dev-proxy half of S2 (Vite now proxies `/api`), nothing in them is implemented yet; the
+API reference above describes what the code actually does today.
 
 **Start with [features/00-implementation-plan.md](features/00-implementation-plan.md)** — it
 sequences all 44 items by dependency and says where to stop. The specs themselves are
@@ -247,13 +249,11 @@ Short version of the plan:
 
 - [ ] **Phase 0–1** — one-line fixes, then the test harness and graceful shutdown (~1 day, most of the risk)
 - [ ] **Phase 2–3** — correctness bugs, then rate limiting and security headers
-- [ ] **Phase 4** — the breaking changes (bearer auth, `/api/v1/`, response envelope). Time-sensitive: cheap while the client has no API calls, expensive once it does
+- [ ] **Phase 4** — the breaking changes (bearer auth, `/api/v1/`, response envelope). The client now uses today's shapes, so each change also needs a client edit. It gets more expensive with every API call the client adds
 - [ ] **Phase 5+** — query layer, refresh tokens, operability, product features — justified by real users or data volume, not by principle
 
 ### Still unplanned
 
-The client work has no specs. It is being built step by step, and these pieces are still missing:
+The client work has no specs. It was built step by step, and it now covers register, login, logout, protected routes, alerts, and contact CRUD against the API. Nothing further is planned for it, apart from the client edits Phase 4 requires.
 
-- **Connect the client to the API.** Replace the in-memory seed data with `axios` calls, and fix the dev proxy first. The root `package.json` has a Create React App `proxy` field that Vite ignores. See [Spec 02 / S2](features/02-security-hardening.md).
-- **Auth UI.** Register and login pages, token storage, and protected routes.
-- **Alerts.** The `SET_ALERT` / `REMOVE_ALERT` action types are declared but not implemented.
+One gap needs a plan before any deploy. The Vite proxy exists only in the dev server, and Express does not serve `client/dist`, so a built client has no way to reach the API. Whichever setup is chosen, it decides whether [Spec 02 / S2](features/02-security-hardening.md)'s `cors` is needed and whether [Spec 05 / A2](features/05-auth-features.md)'s refresh-token cookie can work.

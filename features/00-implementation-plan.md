@@ -13,9 +13,10 @@ Effort figures are rough and assume familiarity with the codebase.
 ## The short answer
 
 If you do nothing else, do **Phase 0 and Phase 1** — roughly one day, and it removes most
-of the risk in the project. Phase 4 is the one with a deadline: it gets much more expensive
-the moment a client consumes the API. A React client now exists in `client/`, but it still
-runs on in-memory data — the deadline is the first commit that wires it to the API.
+of the risk in the project. Phase 4 was the one with a deadline, and that deadline has passed:
+the React client in `client/` now calls every endpoint using today's shapes. Phase 4 is still
+worth doing, but each item now needs a client edit too (listed in the phase), and the list
+grows with every API call the client adds.
 
 | Phase | What | Effort | Skippable? |
 |---|---|---|---|
@@ -23,7 +24,7 @@ runs on in-memory data — the deadline is the first commit that wires it to the
 | 1 | Test harness + shutdown | ~half day | No |
 | 2 | Correctness bugs | ~half day | No |
 | 3 | Security baseline | ~2h | Not if deployed |
-| 4 | **Breaking changes — do before the client calls the API** | ~1 day | No, and it is time-sensitive |
+| 4 | **Breaking changes — server and client together** | ~1 day, plus client edits | No, and it gets more expensive as the client grows |
 | 5 | Query layer | ~1 day | Yes, until data grows |
 | 6 | Refresh tokens | ~2–3 days | Yes, if hourly logout is tolerable |
 | 7 | Operability | ~1 day | Only if deployed |
@@ -102,7 +103,8 @@ top.
 **~2 hours. Do before the first deploy, skip while purely local.**
 
 - [ ] **S1** — rate limit `/api/auth` and `/api/users` ([Spec 02](02-security-hardening.md))
-- [ ] **S2** — `helmet` and `cors`
+- [ ] **S2** — `helmet` and `cors`. The dev-proxy half is done: `client/vite.config.js`
+      proxies `/api`, and the dead root `proxy` field is gone
 - [ ] **S3** — constant-time login path
 
 S1 is the highest-value security item in all seven specs: login is an unthrottled bcrypt
@@ -115,22 +117,30 @@ cheap fix does most of the work before the fiddly one.
 
 ## Phase 4 — Breaking changes
 
-**~1 day. This is the time-sensitive phase.**
+**~1 day, plus client edits. This phase gets more expensive as the client grows.**
 
 - [ ] **A1** — `Authorization: Bearer`, and flatten the JWT payload to `sub` ([Spec 05](05-auth-features.md))
 - [ ] **P5** — mount everything under `/api/v1/` ([Spec 07](07-api-platform.md))
 - [ ] **P7** — one response envelope with machine-readable error codes
 - [ ] **D2** — single-query ownership guard, 401 collapsed into 404 ([Spec 03](03-design-and-performance.md))
 
-Every item here changes an existing contract. Right now that costs nothing, because no
-client consumes this API. Each of them gets materially more expensive the day one does —
-and P5 exists precisely to make later breaks cheap, so it is self-defeating to postpone.
+Every item here changes an existing contract. That was free while nothing consumed the API.
+It no longer is. The React client in `client/` now calls every endpoint using today's
+`x-auth-token` header, unversioned `/api/...` paths, and mixed response shapes. P5 exists
+precisely to make later breaks cheap, so postponing it defeats its purpose.
 
-That day is close. The React client in `client/` already has add, edit, delete, and filter
-working against in-memory state; its next natural step is swapping that state for API calls.
-Either land this phase before that step, or build the client's API layer against the Phase 4
-shapes (bearer header, `/api/v1/`, envelope) and land both together. Writing the client
-against today's `x-auth-token` and bare arrays means rewriting it here.
+The cost is still bounded, because the client lives in this repo and ships with the API.
+There is no outside consumer to migrate, so skip the dual-read and deprecation steps the specs
+describe for that case. Change the server and the client in the same commit:
+
+| Item | Client edit |
+|---|---|
+| A1 | [client/utils/setAuthToken.js](../client/utils/setAuthToken.js): send `Authorization: Bearer <token>` instead of `x-auth-token`. It is the only place the client names the header. |
+| P5 | The seven `/api/...` call sites in [AuthState.jsx](../client/context/auth/AuthState.jsx) and [ContactState.jsx](../client/context/contact/ContactState.jsx). Set `axios.defaults.baseURL` once so the next bump is one line. The Vite proxy matches the `/api` prefix, so it keeps working unchanged. |
+| P7 | The `data?.errors?.[0]?.msg ?? data?.msg` fallback, repeated in all seven failure handlers, and every `res.data` read. Replace the fallback with one shared reader of the new error shape. |
+| D2 | None. The client shows the message and never branches on 401 vs 404. |
+
+Every API call the client adds before this phase lands makes this table longer.
 
 Order within the phase: **A1 → P5 → P7 → D2**. A1 touches every controller's `req.user`
 access; doing it before P7 rewrites those same response lines avoids editing them twice.
@@ -144,8 +154,8 @@ Two notes:
   diverge immediately.
 
 **Update `CLAUDE.md` and `README.md` at the end of this phase** — the auth header, the
-route prefix, the response shape, and the ownership pattern are all described there and
-will all be wrong.
+route prefix, the response shape, the ownership pattern, and the client's error fallback are
+all described there and will all be wrong.
 
 ---
 
@@ -158,7 +168,8 @@ will all be wrong.
 - [ ] **D3** — JSON 404 handler for unmatched routes
 - [ ] **D4** — `type` enum
 - [ ] **F2** — search and filter
-- [ ] **F3** — pagination and sorting
+- [ ] **F3** — pagination and sorting. Breaks the list response the client reads in
+      `getContacts`, so change that in the same commit
 
 D1 first: F2 and F3 both lean on it, and adding the index afterwards means measuring the
 same queries twice.
@@ -182,6 +193,11 @@ Defer this phase honestly. Until it lands, the interim answer is a longer access
 expiry with a comment saying why — a few characters of work that accepts, out loud, that
 revocation is not possible yet. That is a reasonable position for a project with no users.
 An undocumented `expiresIn: 3600` is not.
+
+A2 changes the client too. The client keeps its one token in `localStorage`, where any
+script on the page can read it. A2's design keeps the access token in memory and the refresh
+token in an httpOnly cookie, and whether that cookie works depends on how the client and API
+are deployed, which is not decided yet.
 
 A3 is nearly free once A2 exists and impossible before it. A4 is independently useful and
 can be done early if a password change is needed sooner, minus its session-revocation half.
@@ -235,6 +251,7 @@ T1 ────────────────► Phases 2–8 (regression 
 A1 ────────────────┬─► A2 ─► A3
                    └─► P4 (usable Swagger auth)
 P7 ────────────────► F3 (envelope must fit pagination metadata)
+A1, P5, P7, F3 ────► matching client edits, in the same commit
 D1 ────────────────► F2, F3
 A2 ────────────────► A3, A7, and the revocation half of A4, A5
 email provider ────► A5, A6
