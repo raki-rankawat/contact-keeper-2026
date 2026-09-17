@@ -1,0 +1,34 @@
+# Installed inside the image instead — host node_modules hold win32 binaries
+node_modules
+client/node_modules
+
+# Rebuilt by the client-build stage
+client/dist
+client/build
+dist
+build
+
+# Secrets never go into an image layer — compose passes them at runtime
+.env
+.env.*
+!.env.example
+
+# Not needed to run the app
+.git
+.gitignore
+.github
+.vscode
+.idea
+.claude
+.playwright-mcp
+graphify-out
+features
+coverage
+*.log
+npm-debug.log*
+Dockerfile
+compose.yaml
+compose.prod.yaml
+.dockerignore
+DOCKER.md
+CLAUDE.md

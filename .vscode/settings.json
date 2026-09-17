@@ -1,0 +1,61 @@
+{
+  // ---------------------------------------------------------------------
+  // House style. CLAUDE.md: no semicolons, single quotes, 2-space indent,
+  // trailing commas. These are editor-level settings only — no formatter is
+  // wired up, and formatOnSave is deliberately NOT set here, because adding a
+  // formatter is still an open proposal (features/04-tooling.md, T5) rather
+  // than an agreed convention. Until it lands, match the surrounding file.
+  // ---------------------------------------------------------------------
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+
+  // LF everywhere, so a clone on Windows does not rewrite every line on save.
+  // Applies to new files; existing files keep the endings they already have.
+  "files.eol": "\n",
+
+  // Two trailing spaces are a hard line break in Markdown.
+  "[markdown]": {
+    "files.trimTrailingWhitespace": false
+  },
+
+  // Applies to VS Code's own refactors and auto-imports (quote style), and to
+  // the built-in JS formatter if someone invokes it by hand. It does not turn
+  // any formatter on.
+  "javascript.preferences.quoteStyle": "single",
+  "typescript.preferences.quoteStyle": "single",
+  "javascript.format.semicolons": "remove",
+
+  // ---------------------------------------------------------------------
+  // ESLint. The only config is client/eslint.config.js — the backend has no
+  // linter. Without this the extension looks for a config at the repo root,
+  // finds none, and reports every backend file as an error.
+  // ---------------------------------------------------------------------
+  "eslint.workingDirectories": [
+    { "directory": "client", "changeProcessCWD": true }
+  ],
+  "eslint.validate": ["javascript", "javascriptreact"],
+
+  // ---------------------------------------------------------------------
+  // Noise and performance
+  // ---------------------------------------------------------------------
+  // The dev containers poll the bind mount for changes; excluding these keeps
+  // VS Code's own watcher off the same directories.
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/client/dist/**": true,
+    "**/graphify-out/**": true,
+    "**/.git/objects/**": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/client/dist": true,
+    "**/package-lock.json": true,
+    "**/graphify-out": true
+  },
+
+  // client/context and client/utils sit beside src/, not inside it, so imports
+  // read as ../../../context/... — this keeps them resolvable for IntelliSense.
+  "javascript.preferences.importModuleSpecifier": "relative"
+}

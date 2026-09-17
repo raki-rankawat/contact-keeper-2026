@@ -18,6 +18,10 @@ A contact manager: a REST API where users register, log in with a JWT, and get a
 
 ## Getting started
 
+> **Running in Docker?** `docker compose up --build` brings up Mongo, the API
+> and the client with nothing installed on the host but Docker and a `.env`.
+> See [DOCKER.md](DOCKER.md). The rest of this section covers running natively.
+
 ### Prerequisites
 
 - Node.js 20.19+ (Vite 8's minimum; the API alone runs on 18+)
@@ -223,6 +227,65 @@ client/
 ```
 
 API requests flow **route → validation → auth → controller → model**. Routes own the validation rules; controllers assume a valid body and an authenticated `req.user`.
+
+## Deploy to Render
+
+The `prod` stage of the [Dockerfile](Dockerfile) is the deployable unit: one
+container where Express serves the API and the client bundle together.
+
+**Bring your own database.** Render has no managed MongoDB, and the `mongo`
+service in [compose.prod.yaml](compose.prod.yaml) is local-only — it does not
+travel with the image. Point `MONGO_URI` at a MongoDB Atlas cluster, and add
+`0.0.0.0/0` under Atlas **Network Access**; Render's free instances have no
+fixed outbound IP, so an address-based allowlist will not work.
+
+### Push the image, then deploy it
+
+```bash
+docker build --target prod --platform linux/amd64 \
+  -t docker.io/<user>/contact-keeper-2026:latest .
+
+docker login
+docker push docker.io/<user>/contact-keeper-2026:latest
+```
+
+In Render: **New → Web Service → Existing Image**, give it the image URL, set
+the health check path to `/`, and add two environment variables:
+
+| Key | Value |
+| --- | --- |
+| `MONGO_URI` | your Atlas connection string |
+| `JWT_SECRET` | a long random string |
+
+`NODE_ENV=production` is already baked into the `prod` stage, so it does not
+need setting here — unlike the Node-runtime route, where forgetting it makes
+[server.js](server.js) skip the static handler and answer `/` with JSON.
+
+A private image needs registry credentials added under Render's **Registry
+Credentials** settings. A public repository needs none.
+
+### Or let Render build the Dockerfile
+
+**New → Web Service** from the GitHub repo, runtime **Docker**. Render builds
+on every push, so there is no manual build-tag-push loop. `prod` is the last
+stage in the Dockerfile, so a plain build selects it and `dev` is skipped —
+Render has no `--target` setting, which is why the stage order matters.
+
+[render.yaml](render.yaml) encodes both variants as a Blueprint.
+
+### Notes
+
+- **Port.** Render injects `PORT` and `server.js` already reads it, binding all
+  interfaces. `EXPOSE` in the image says 5000, which Render overrides; if port
+  detection ever fails, set `PORT=5000` explicitly to match.
+- **Architecture.** Render runs `linux/amd64`. Docker Desktop on Windows/Intel
+  builds that by default; `--platform linux/amd64` above makes it explicit and
+  is required if you ever build on an Apple Silicon machine.
+- **Free instances sleep** after 15 minutes idle — the first request back takes
+  ~50s.
+- **The database is named `dev-db`.** `config/db.js` hardcodes it
+  ([Spec 04 / T4](features/04-tooling.md)), overriding the database named in
+  `MONGO_URI`, in production as well as locally.
 
 ## Roadmap
 

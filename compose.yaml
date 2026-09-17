@@ -1,0 +1,81 @@
+# Development stack: Mongo + the API on :5000 + the Vite dev server on :5173.
+# Both app services bind-mount the source, so edits on the host reload in place.
+#
+#   docker compose up --build      start everything
+#   docker compose down            stop (keeps the database)
+#
+name: contact-keeper-2026
+
+services:
+  mongo:
+    image: mongo:8
+    restart: unless-stopped
+    ports:
+      # Exposed so you can point Compass or mongosh at localhost:27017.
+      - '27017:27017'
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  server:
+    build:
+      context: .
+      target: dev
+    restart: unless-stopped
+    # -L (polling) because inotify does not cross the Windows bind mount.
+    # --inspect exposes the Node debugger for .vscode/launch.json. It listens on
+    # 0.0.0.0 inside the container, but the port below is published to localhost
+    # only, so it is not reachable from the network.
+    command: npx nodemon -L --inspect=0.0.0.0:9229 server.js
+    env_file:
+      # Supplies JWT_SECRET. Not required to exist — if it doesn't, config/env.js
+      # exits at boot and prints exactly which variables are missing.
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: development
+      PORT: '5000'
+      # Overrides whatever .env says, so the stack is self-contained.
+      # Comment this line out to use the MONGO_URI from .env (e.g. Atlas) instead.
+      MONGO_URI: mongodb://mongo:27017/contact-keeper
+    ports:
+      - '5000:5000'
+      # Node inspector — bound to localhost so only this machine can attach.
+      - '127.0.0.1:9229:9229'
+    volumes:
+      - .:/app
+      # Anonymous volumes: keep the image's Linux node_modules from being
+      # shadowed by the host's win32 ones.
+      - /app/node_modules
+      - /app/client/node_modules
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  client:
+    build:
+      context: .
+      target: dev
+    restart: unless-stopped
+    command: npm --prefix client run dev -- --host 0.0.0.0 --port 5173
+    environment:
+      # Read by client/vite.config.js — the dev proxy has to reach the API by
+      # its service name, not localhost, now that they are separate containers.
+      API_PROXY_TARGET: http://server:5000
+      VITE_USE_POLLING: 'true'
+    ports:
+      - '5173:5173'
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/client/node_modules
+    depends_on:
+      - server
+
+volumes:
+  mongo-data:

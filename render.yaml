@@ -1,0 +1,52 @@
+# Render Blueprint — optional; the same settings can be typed into the dashboard.
+#
+# Render has no managed MongoDB, and the `mongo` service in compose.prod.yaml is
+# local-only — it does not travel with the image. MONGO_URI must point at a
+# MongoDB Atlas cluster (or another externally reachable Mongo).
+
+services:
+  # Deploy a pre-built image from a registry. Push it first:
+  #   docker build --target prod --platform linux/amd64 \
+  #     -t docker.io/<user>/contact-keeper-2026:latest .
+  #   docker push docker.io/<user>/contact-keeper-2026:latest
+  - type: web
+    name: contact-keeper-2026
+    runtime: image
+    plan: free
+    image:
+      url: docker.io/<user>/contact-keeper-2026:latest
+
+    # No /health route yet; '/' serves the client index in production.
+    healthCheckPath: /
+
+    envVars:
+      # NODE_ENV is already baked into the prod stage — no need to set it here.
+      # Paste the Atlas connection string in the dashboard; never commit it.
+      - key: MONGO_URI
+        sync: false
+      # Rendered once on first deploy. Changing it invalidates issued tokens.
+      - key: JWT_SECRET
+        generateValue: true
+
+# ---------------------------------------------------------------------------
+# Alternative: let Render build the Dockerfile itself on every push, instead of
+# pushing images by hand. Swap the block above for this one.
+#
+#  - type: web
+#    name: contact-keeper-2026
+#    runtime: docker
+#    plan: free
+#    branch: master
+#    dockerfilePath: ./Dockerfile
+#    dockerContext: .
+#    healthCheckPath: /
+#    envVars:
+#      - key: MONGO_URI
+#        sync: false
+#      - key: JWT_SECRET
+#        generateValue: true
+#
+# `prod` is the last stage in the Dockerfile, so a plain build selects it and
+# the `dev` stage is skipped. Render has no --target setting, which is why the
+# stage order in the Dockerfile matters.
+# ---------------------------------------------------------------------------

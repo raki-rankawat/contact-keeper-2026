@@ -1,0 +1,45 @@
+# Production-shaped stack: Mongo + one container where Express serves both the
+# API and the built client on :5000. No bind mounts, no dev server, no reload.
+#
+#   docker compose -f compose.prod.yaml up --build -d
+#   docker compose -f compose.prod.yaml down
+#
+# The project name differs from compose.yaml, so this stack gets its own
+# mongo-data volume and never touches the development database.
+name: contact-keeper-2026-prod
+
+services:
+  mongo:
+    image: mongo:8
+    restart: unless-stopped
+    # Deliberately no published port — only the app container needs to reach it.
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  app:
+    build:
+      context: .
+      target: prod
+    restart: unless-stopped
+    env_file:
+      # Supplies JWT_SECRET. Use a different secret here than in development.
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: production
+      PORT: '5000'
+      MONGO_URI: mongodb://mongo:27017/contact-keeper
+    ports:
+      - '5000:5000'
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+volumes:
+  mongo-data:

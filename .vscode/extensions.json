@@ -1,3 +1,13 @@
 {
-  "recommendations": ["anthropic.claude-code"]
+  "recommendations": [
+    "anthropic.claude-code",
+    // Lints the client. The backend has no linter — see features/04-tooling.md.
+    "dbaeumer.vscode-eslint",
+    // Compose stacks, container logs and shells from the sidebar.
+    "ms-azuretools.vscode-docker",
+    // Browse the dev database on localhost:27017 without leaving the editor.
+    "mongodb.mongodb-vscode",
+    // The built-in Markdown preview does not render Mermaid; DOCKER.md needs this.
+    "bierner.markdown-mermaid"
+  ]
 }

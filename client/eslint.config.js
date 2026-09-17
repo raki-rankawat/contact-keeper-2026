@@ -18,4 +18,10 @@ export default defineConfig([
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
   },
+  {
+    // Vite's config runs in Node, not the browser — it reads process.env to
+    // find the API proxy target when the app runs in Docker.
+    files: ['vite.config.js'],
+    languageOptions: { globals: globals.node },
+  },
 ])

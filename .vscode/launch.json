@@ -1,0 +1,45 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // Requires the dev stack to be running: docker compose up -d
+      // compose.yaml starts nodemon with --inspect and publishes 9229 to
+      // localhost only, so breakpoints work against the container.
+      "name": "Attach to API (Docker)",
+      "type": "node",
+      "request": "attach",
+      "address": "localhost",
+      "port": 9229,
+      "restart": true,
+      "localRoot": "${workspaceFolder}",
+      "remoteRoot": "/app",
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    },
+    {
+      // For running the API outside Docker. Needs a local Mongo reachable at
+      // whatever MONGO_URI in .env points to.
+      "name": "Launch API (no Docker)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/server.js",
+      "envFile": "${workspaceFolder}/.env",
+      "skipFiles": ["<node_internals>/**"],
+      "console": "integratedTerminal"
+    },
+    {
+      // Client breakpoints in the editor. Start the stack first; this only
+      // attaches a browser to the Vite dev server.
+      "name": "Debug client (Chrome)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/client"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Debug API + client (Docker)",
+      "configurations": ["Attach to API (Docker)", "Debug client (Chrome)"]
+    }
+  ]
+}
