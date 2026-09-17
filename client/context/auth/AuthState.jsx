@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { useCallback, useReducer } from 'react'
+import { useCallback, useEffect, useReducer } from 'react'
 import AuthContext from './authContext'
 import authReducer from './authReducer'
 import setAuthToken from '../../utils/setAuthToken'
@@ -28,9 +28,6 @@ const config = {
   },
 }
 
-// Token persistence lives here, not in the reducer: React runs the reducer
-// during the next render, so anything called right after dispatch would
-// still see the old localStorage.
 const saveToken = token => {
   localStorage.setItem('token', token)
   setAuthToken(token)
@@ -62,6 +59,12 @@ const AuthState = ({ children }) => {
       })
     }
   }, [])
+
+  useEffect(() => {
+    if (localStorage.getItem('token')) {
+      loadUser()
+    }
+  }, [loadUser])
 
   // Register User
   const register = useCallback(

@@ -1,5 +1,5 @@
 import { useReducer } from 'react'
-import { v4 } from 'uuid'
+import axios from 'axios'
 import ContactContext from './contactContext'
 import contactReducer from './contactReducer'
 import {
@@ -10,43 +10,62 @@ import {
   UPDATE_CONTACT,
   FILTER_CONTACTS,
   CLEAR_FILTER,
+  CONTACT_ERROR,
+  GET_CONTACTS,
+  CLEAR_CONTACTS,
 } from '../types'
 
 const initialState = {
-  contacts: [
-    {
-      id: 1,
-      name: 'Jill Johnson',
-      email: 'jill@gmail.com',
-      phone: '111-111-1111',
-      type: 'personal',
-    },
-    {
-      id: 2,
-      name: 'Sara Watson',
-      email: 'sara@gmail.com',
-      phone: '111-122-1111',
-      type: 'personal',
-    },
-    {
-      id: 3,
-      name: 'Harry White',
-      email: 'harry@gmail.com',
-      phone: '111-144-1111',
-      type: 'professional',
-    },
-  ],
+  contacts: null,
   current: null,
   filter: '',
+  error: null,
 }
 
 const ContactState = ({ children }) => {
   const [state, dispatch] = useReducer(contactReducer, initialState)
 
+  const config = {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  }
+
+  // Get Contacts
+  const getContacts = async () => {
+    try {
+      const res = await axios.get('/api/contacts')
+
+      dispatch({ type: GET_CONTACTS, payload: res.data })
+    } catch (err) {
+      const data = err.response?.data
+
+      dispatch({
+        type: CONTACT_ERROR,
+        payload:
+          data?.errors?.[0]?.msg ?? data?.msg ?? 'Failed to load contacts',
+      })
+    }
+  }
+
+  // Clear Contacts
+  const clearContacts = () => {
+    dispatch({ type: CLEAR_CONTACTS })
+  }
+
   // Add Contact
-  const addContact = contact => {
-    contact.id = v4()
-    dispatch({ type: ADD_CONTACT, payload: contact })
+  const addContact = async contact => {
+    try {
+      const res = await axios.post('/api/contacts', contact, config)
+      dispatch({ type: ADD_CONTACT, payload: res.data })
+    } catch (err) {
+      const data = err.response?.data
+
+      dispatch({
+        type: CONTACT_ERROR,
+        payload: data?.errors?.[0]?.msg ?? data?.msg ?? 'Failed to add contact',
+      })
+    }
   }
 
   // Delete Contact
@@ -83,11 +102,13 @@ const ContactState = ({ children }) => {
     <ContactContext.Provider
       value={{
         ...state,
+        getContacts,
         addContact,
+        updateContact,
         onDelete,
+        clearContacts,
         setCurrent,
         clearCurrent,
-        updateContact,
         filterContacts,
         clearFilter,
       }}

@@ -3,9 +3,16 @@ import { RiLogoutBoxRFill } from 'react-icons/ri'
 import { Link } from 'react-router-dom'
 
 import { useAuth } from '../../../context/auth/authContext'
+import { useContacts } from '../../../context/contact/contactContext'
 
 const Navbar = ({ title }) => {
   const { isAuthenticated, logout, user } = useAuth()
+  const { clearContacts } = useContacts
+
+  const handleLogout = () => {
+    logout()
+    clearContacts()
+  }
 
   const authLinks = (
     <>
@@ -17,7 +24,7 @@ const Navbar = ({ title }) => {
       </li>
       <li>Hi, {user && user.name.split(' ')[0]}</li>
       <li>
-        <a href='#' className='flex-align' onClick={() => logout()}>
+        <a href='#' className='flex-align' onClick={handleLogout}>
           <RiLogoutBoxRFill /> <span className='hide-sm'>Logout</span>
         </a>
       </li>
